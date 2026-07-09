@@ -12,8 +12,8 @@ eng  ← •Import "life.bqn"
 seed ← •Import "seed.bqn"
 
 # ── params (positional: d, n) ────────────────────────────────────────────────
-d    ← {0<≠•args ? •BQN ⊑•args ; 4}
-n    ← {1<≠•args ? •BQN 1⊑•args ; 12}
+d    ← {0<≠•args ? •ParseFloat ⊑•args ; 4}
+n    ← {1<≠•args ? •ParseFloat 1⊑•args ; 12}
 kg    ← 45         # generations per trial
 nc    ← 800        # candidate rules to sample
 dens ← 0.12       # seed density
@@ -31,7 +31,7 @@ M ← {⌊0.5+1000×𝕩}
 # ── evaluate a rule: kg gens from seed0, early-exit on death/explosion ─────────
 Metrics ← {rule←𝕩
   traj  ← ⟨rule, kg⟩ eng.Trajectory seed0     # list of kg+1 grids
-  pops  ← {+´⥊𝕩}¨ traj
+  pops  ← +´∘⥊¨ traj                          # population of each state
   chg   ← (1↓traj) {𝕨≢𝕩}¨ ¯1↓traj             # did each consecutive state change?
   churn ← (+´chg) ÷ 1⌈≠chg
   died     ← ∨´ pops=0
@@ -67,11 +67,13 @@ survivors ← +´ {5⊑𝕩}¨ res
 •Out (•Repr survivors)∾" survived full run; metrics ×1000. top "∾(•Repr topN)∾":"
 •Out "score  rule            meanD  maxD  churn  (×1000)"
 Pad ← {𝕨 ↑ 𝕩 ∾ 𝕨⥊' '}   # left-justify 𝕩 into width 𝕨
-Row ← {sc‿rule‿mD‿xD‿ch‿ok: (6 Pad •Repr M sc)∾(16 Pad RuleStr rule)∾(7 Pad •Repr M mD)∾(6 Pad •Repr M xD)∾(•Repr M ch)}
+Mr  ← •Repr∘M            # round to ×1000 and render as text
+Col ← {𝕨 Pad Mr 𝕩}      # one metric column, left-justified into width 𝕨
+Row ← {sc‿rule‿mD‿xD‿ch‿ok: (6 Col sc)∾(16 Pad RuleStr rule)∾(7 Col mD)∾(6 Col xD)∾Mr ch}
 •Out∘Row¨ topN↑ranked
 
 # ── rules.md ──────────────────────────────────────────────────────────────────
-MdRow ← {sc‿rule‿mD‿xD‿ch‿ok: "| `"∾(RuleStr rule)∾"` | "∾(•Repr M sc)∾" | "∾(•Repr M mD)∾" | "∾(•Repr M xD)∾" | "∾(•Repr M ch)∾" |"}
+MdRow ← {sc‿rule‿mD‿xD‿ch‿ok: "| `"∾(RuleStr rule)∾"` | "∾(Mr sc)∾" | "∾(Mr mD)∾" | "∾(Mr xD)∾" | "∾(Mr ch)∾" |"}
 head ← ⟨
   "# Rule leaderboard — d="∾(•Repr d)∾", n="∾(•Repr n)∾", seed density "∾(•Repr dens)∾", "∾(•Repr kg)∾" gens"
   ""

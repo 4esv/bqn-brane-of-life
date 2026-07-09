@@ -10,7 +10,8 @@
 # Write an H×W×3 array of 0..255 integers to path 𝕨 as a P6 PPM.
 # ⥊img is row-major r,g,b,r,g,b… — exactly P6 pixel order.
 Write ← {path 𝕊 img:
-  h‿w‿c ← ≢img
-  hdr ← "P6"∾(@+10)∾(•Repr w)∾" "∾(•Repr h)∾(@+10)∾"255"∾(@+10)
-  path •FBytes (-⟜@ hdr) ∾ ⥊ ⌊ img
+  h‿w‿· ← ≢img
+  nl  ← @+10
+  hdr ← "P6"∾nl∾(•Repr w)∾" "∾(•Repr h)∾nl∾"255"∾nl
+  path •FBytes (hdr-@) ∾ ⥊⌊img        # hdr-@ turns the ASCII header into bytes
 }

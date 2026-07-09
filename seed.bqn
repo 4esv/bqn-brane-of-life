@@ -19,9 +19,7 @@ Noise ← {n‿d‿p‿s:
 # brane have no on-slice cause. Uses sh⥊wmask, which aligns a length-n vector to
 # the last axis (verified).  𝕩 ≡ ⟨n, d, density, rng-seed, c, h⟩
 Slab ← {n‿d‿p‿s‿c‿h:
-  base ← Noise n‿d‿p‿s
-  sh ← d⥊n
-  w ← ↕n
-  wmask ← (w≥c-h) ∧ w≤c+h
-  base × sh⥊wmask
+  sh    ← d⥊n
+  wmask ← h ≥ |c-↕n          # w-layers within h of centre c (last axis)
+  (Noise n‿d‿p‿s) × sh⥊wmask
 }
