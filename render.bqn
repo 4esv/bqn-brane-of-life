@@ -21,7 +21,7 @@ Upscale ← {s 𝕊 im: 1‿0‿2⍉ s⊸/ 1‿0‿2⍉ s⊸/ im}
 
 # place image im centred on a px×px×3 background bg (gather + masked write)
 Blit ← {px‿bg 𝕊 im:
-  ih‿iw‿ic ← ≢im
+  ih‿iw‿· ← ≢im
   oy ← ⌊(px-ih)÷2 ⋄ ox ← ⌊(px-iw)÷2
   ry ← (↕px)-oy ⋄ rx ← (↕px)-ox
   vy ← (ry≥0)∧ry<ih ⋄ vx ← (rx≥0)∧rx<iw
@@ -32,7 +32,7 @@ Blit ← {px‿bg 𝕊 im:
 }
 
 # ── k ≤ 2: flat grid of cells (1D → n×1 column, 2D → n×n square) ───────────────
-Flat ← {px‿margin‿bg‿boxrgb‿pal 𝕊 brane‿cval:
+Flat ← {px‿margin‿bg‿·‿pal 𝕊 brane‿cval:      # no wireframe at k≤2
   r‿c ← 2↑ (≢brane)∾1
   b2 ← r‿c ⥊ brane ⋄ v2 ← r‿c ⥊ cval
   pal2 ← pal ∾ ≍bg                       # bg as an extra palette row for dead cells
@@ -96,7 +96,7 @@ Cube ← {px‿margin‿bg‿boxrgb‿pal 𝕊 brane‿cval:
 }
 
 # ── k = 4: small multiples — one iso cube per index of the 4th visible axis ────
-Tess ← {px‿margin‿bg‿boxrgb‿pal 𝕊 brane‿cval:
+Tess ← {px‿·‿bg‿boxrgb‿pal 𝕊 brane‿cval:      # tiles set their own margin
   n    ← ⊑ ≢brane
   cols ← ⌈ n ⋆ 0.5
   rows ← ⌈ n ÷ cols

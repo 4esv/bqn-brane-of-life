@@ -128,8 +128,10 @@ composed over all axes, so 4D costs about 12 shift-and-add passes rather than th
 81 needed to build every shifted copy.
 
 ```bqn
-Box  ← {d←=𝕩 ⋄ F←{𝕤⋄a←𝕨⋄g←𝕩⋄v←1⌾(a⊸⊑)(d⥊0)⋄(v⌽g)+g+(-v)⌽g} ⋄ 𝕩 F´ ↕d}
-Neigh ← {(Box 𝕩)-𝕩}
+Face ← {v←𝕨=↕=𝕩 ⋄ (v⌽𝕩)+(-v)⌽𝕩}   # the ±1 toroidal shifts along axis 𝕨, summed
+Sum3 ← {𝕩+𝕨 Face 𝕩}               # 3-wide sum along axis 𝕨
+Box  ← {𝕩 Sum3´ ↕=𝕩}              # box sum = Sum3 folded over every axis
+Neigh ← Box-⊢                     # neighbour count = box minus the centre
 Life ← {s‿b←𝕨 ⋄ n←Neigh 𝕩 ⋄ (n∊b)∨𝕩∧n∊s}   # 𝕨 = ⟨survive, birth⟩
 ```
 

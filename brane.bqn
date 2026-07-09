@@ -16,16 +16,20 @@ rnd  ← •Import "render.bqn"
 ppm  ← •Import "ppm.bqn"
 
 # ── tiny arg + rule parsing ───────────────────────────────────────────────────
-Cut ← {d 𝕊 str: s←d≠str ⋄ (s / ¯1 + +`»⊸<s) ⊔ s/str}      # split str on char d
-# "3-6" | "3,5" | "5" | "3-6,9" → flat list of neighbour counts
-ParseSet ← {toks←','Cut 𝕩 ⋄ ∾ {nums←•ParseFloat¨'-'Cut 𝕩 ⋄ a←⊑nums ⋄ a+↕1+(¯1⊑nums)-a}¨ toks}
-# "S3-6/B3" → ⟨survive-list, birth-list⟩  (S part then B part)
-ParseRule ← {parts←'/'Cut 𝕩 ⋄ ⟨ParseSet 1↓⊑parts, ParseSet 1↓1⊑parts⟩}
+# split 𝕩 on every 𝕨, dropping separators and empty fields (run-numbering split)
+Split ← {m←𝕨≠𝕩 ⋄ (m/¯1++`»⊸<m) ⊔ m/𝕩}
+# "5" | "3-6" → the inclusive integer range it names
+Range    ← {n←•ParseFloat¨'-'Split 𝕩 ⋄ (⊑n)+↕1+(¯1⊑n)-⊑n}
+# "3-6" | "3,5" | "3-6,9" → flat list of neighbour counts
+ParseSet ← {∾ Range¨ ','Split 𝕩}
+# "S3-6/B3" → ⟨survive-list, birth-list⟩
+ParseRule ← {s‿b←'/'Split 𝕩 ⋄ ⟨ParseSet 1↓s, ParseSet 1↓b⟩}
 
-kv   ← {'='Cut 𝕩}¨ •args
-kv   ↩ (2=≠¨kv)/kv                               # keep only well-formed k=v
-keys ← ⊑¨kv ⋄ vals ← {1⊑𝕩}¨kv
-Sget ← {def 𝕊 key: ⊑ ((key⊸≡¨keys)∾1) / vals∾⟨def⟩}   # first match, else default
+# •args is a list of "key=value" strings; look each option up by key, else default.
+kv   ← '='⊸Split¨ •args
+kv   ↩ (2=≠¨kv)/kv                               # keep only well-formed key=value
+keys ← ⊑¨kv ⋄ vals ← 1⊑¨kv
+Sget ← {def 𝕊 key: (vals∾<def) ⊑˜ ⊑ keys⊐<key}   # first match, else default
 Nget ← {def 𝕊 key: •ParseFloat def Sget key}     # numeric option, with default
 
 # ── config ────────────────────────────────────────────────────────────────────
@@ -59,14 +63,14 @@ invis ← ((3⋆d)-3⋆k) ÷ (3⋆d)-1                      # invisible fraction
 g0     ← {d>k ? seed.Slab n‿d‿dens‿sk‿wc‿wh ; seed.Noise n‿d‿dens‿sk}
 frames ← ⟨rule, steps⟩ eng.Trajectory g0          # list of steps+1 grids
 Brane  ← ((w0⊸⊑)⎉1)⍟(d-k)                          # slice hidden axes down to k-D
-Pad4   ← {s←•Repr 𝕩 ⋄ ((0⌈4-≠s)⥊'0')∾s}
-Path   ← {(•wdpath)∾"/"∾outdir∾"/"∾(Pad4 𝕩)∾".ppm"}
+Pad4   ← {s←•Repr 𝕩 ⋄ ('0'⥊˜0⌈4-≠s)∾s}           # zero-pad a frame index to width 4
+Path   ← {•wdpath∾"/"∾outdir∾"/"∾(Pad4 𝕩)∾".ppm"}
 
 Draw ← {i←𝕩
   gf ← i⊑frames                                    # full d-D state
   img ← cfg rnd.Frame ⟨Brane gf, Brane eng.AxisDom gf⟩
   (Path i) ppm.Write img
-  (0=20|i) ◶ ⟨⊢, {𝕤⋄•Out "  frame "∾(•Repr i)∾"/"∾•Repr steps}⟩ @
+  {𝕤⋄•Out "  frame "∾(•Repr i)∾"/"∾•Repr steps}⍟(0=20|i) @   # progress every 20th frame
 }
 Draw¨ ↕≠frames
 •Out "done: "∾(•Repr ≠frames)∾" frames → "∾outdir∾"/"
