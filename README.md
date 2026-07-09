@@ -1,134 +1,132 @@
 # bqn-brane-of-life
 
-An n-dimensional Game of Life in BQN, shown as a **3D brane sliced from a 4D
-automaton**. You watch a 3D volume evolve. About **67.5%** of what drives it
-lives in a 4th dimension you can't see, so cells are born and die with no
-visible cause.
+An n-dimensional Game of Life in BQN. It runs Conway-style rules in 4D (or 3D,
+or 5D) and renders a lower-dimensional slice of the grid — usually a 3D volume
+cut out of a 4D automaton.
 
-> More affected by the invisible than the visible.
+I wanted to see what Game of Life looks like above two dimensions. That is the
+entire reason it exists. There is no practical use. I did check.
 
-![The 32³ brane, sliced at w=0 from a 4D S4/B4 automaton, voxels coloured by their dominant neighbour axis.](assets/hero.gif)
+![A 3D slice of a 4D automaton, coloured by neighbour axis](assets/hero.gif)
 
-*A 32³ brane sliced at `w=0` from a 4D `S4/B4` automaton, one seed over 96
-generations. Each voxel is coloured by the axis most of its neighbours lie
-along — blue/green/amber for the visible x/y/z, **magenta for the hidden `w`**.
-Every birth and death you see is 32.5% local and 67.5% driven by neighbours on
-that magenta axis you can't see.*
+*3D slice of a 4D `S4/B4` automaton. 32³ voxels, 96 generations, coloured by
+which axis each cell's neighbours mostly sit on.*
 
-## The idea in one number
+## The one number worth knowing
 
-A cell's fate depends on its Moore neighbourhood of `3^d − 1` cells. Render only
-a k-dimensional slice and the neighbours along the `d − k` hidden axes are
-invisible. The share of each cell's fate you cannot account for is:
+A cell's fate depends on its `3^d − 1` Moore neighbours. Render only `k` of the
+`d` dimensions and the neighbours along the dropped axes are off-screen:
 
 ```
-invisible_fraction = (3^d − 3^k) / (3^d − 1)
+invisible = (3^d − 3^k) / (3^d − 1)
 ```
 
-For the flagship (k=3 visible, d=4): `(81 − 27) / (81 − 1) = 54/80 =` **67.5%**.
+For a 3D view of a 4D grid that's `(81 − 27)/(81 − 1) =` **67.5%**. So most of
+what moves the visible cells is happening where you can't see it, and things
+appear and vanish for no on-screen reason. It is not profound. It looks cool.
+That was enough for me.
 
 | d | Moore neighbours | invisible for a 3D slice |
 |---|---|---|
 | 3 | 26  | 0% (nothing hidden) |
-| 4 | 80  | **67.5%** ← flagship |
+| 4 | 80  | **67.5%** |
 | 5 | 242 | 89.3% |
 
-The engine is dimension-agnostic, so both numbers are parameters, not rewrites.
+## Features, and why you would not use them
 
-## Any dimension into any dimension
+**Any dimension into any dimension.** `k` visible, `d` total, `1 ≤ k ≤ 4`, `k ≤ d`.
+The renderer picks a mode from `k`:
 
-Pass `k` (the visible dimension) and `d` (the automaton's dimension), with
-`1 ≤ k ≤ 4` and `k ≤ d`. The renderer draws a 1D line, a 2D grid, a 3D iso cube,
-or — for 4D — a grid of iso cubes (one per the 4th visible axis). Every cell is
-coloured by the axis most of its neighbours lie along, so a magenta cell is one
-driven mainly from off-slice.
+- `k=1` → a line of cells
+- `k=2` → a flat grid (i.e. ordinary Game of Life)
+- `k=3` → an isometric cube
+- `k=4` → a grid of cubes, one per position along the 4th visible axis
 
-![Four views: 2D-of-2D, 2D-of-4D, 3D-of-4D, and 4D-of-4D, each labelled with its invisible fraction.](assets/dimensions.png)
+![Four render modes at different (k,d), each labelled with its invisible fraction](assets/dimensions.png)
 
-```sh
-bqn brane.bqn k=2 d=2      # classic flat Life,        0% hidden
-bqn brane.bqn k=2 d=4      # 2D slice of 4D,        90.0% hidden
-bqn brane.bqn k=3 d=4      # the flagship cube,     67.5% hidden
-bqn brane.bqn k=4 d=4 n=10 # 4D as small multiples,    0% hidden
-bqn brane.bqn k=1 d=3      # a single line,         92.3% hidden
-```
+**A rule search.** Conway's B3/S23 dies on contact with 4D (80 neighbours instead
+of 8, everything overcrowds and starves), so `search.bqn` brute-forces rules that
+survive, stay sparse, and keep moving, and dumps a leaderboard into
+[`rules.md`](rules.md).
 
-`invisible = (3^d − 3^k)/(3^d − 1)`, printed on every run.
+**Colouring by dominant neighbour axis.** Each cell is tinted by the axis most of
+its neighbours lie on. In a 4D run the hidden axis gets magenta, so you can watch
+cells being shoved around by a dimension you aren't drawing. Mostly it's prettier.
 
-## Why BQN
-
-A neighbour count is the board summed over every shift. In an array language
-that generalises across rank for free: the same `Step` runs at d=2, 3, 4, 5 with
-dimension read off the grid's rank, not hard-coded. The neighbour sum is
-**separable** (a 3-wide sum along each axis, composed over all axes) so d=4 costs
-~12 shift-adds instead of the 81 you'd get from building every shifted copy.
-
-```bqn
-Box  ← {d←=𝕩 ⋄ F←{𝕤⋄a←𝕨⋄g←𝕩⋄v←1⌾(a⊸⊑)(d⥊0)⋄(v⌽g)+g+(-v)⌽g} ⋄ 𝕩 F´ ↕d}
-Neigh ← {(Box 𝕩)-𝕩}
-Life ← {s‿b←𝕨 ⋄ n←Neigh 𝕩 ⋄ (n∊b)∨𝕩∧n∊s}   # 𝕨 = ⟨survive, birth⟩, Bays S/B
-```
-
-Boundaries wrap (toroidal) on every axis, the hidden one included.
+**A renderer written entirely in BQN.** Isometric splat, painter's algorithm as a
+vectorised z-buffer, depth shading, a bounding-box wireframe. It emits PPM frames
+and `ffmpeg` stitches them. No 3D engine, no camera, no dependencies past ffmpeg.
 
 ## Run it
 
 Needs [CBQN](https://github.com/dzaima/CBQN) (`bqn` on PATH) and `ffmpeg`.
 
 ```sh
-make test     # engine correctness gate — Conway patterns at d=2, rank check at d=3/4
-make hero     # render the flagship loop → assets/hero.gif + out/brane.mp4
-make search   # hunt for living 4D rules → rules.md
+make test     # engine correctness gate (Conway patterns at d=2, rank check at d=3/4)
+make hero     # render the default loop → assets/hero.gif + out/brane.mp4
+make search   # look for living 4D rules → rules.md
 make clean
 ```
 
-Drive the engine directly for any dimension, rule, or seed:
+Or drive it directly:
 
 ```sh
-bqn brane.bqn k=3 d=4 n=32 rule=S4/B4 seed=42 steps=200 px=800 out=frames
+bqn brane.bqn k=2 d=2      # ordinary flat Life        (0% hidden)
+bqn brane.bqn k=2 d=4      # 2D window on a 4D grid     (90.0% hidden)
+bqn brane.bqn k=3 d=4      # the default 3D-of-4D cube  (67.5% hidden)
+bqn brane.bqn k=4 d=4 n=10 # 4D as a grid of cubes      (0% hidden)
+bqn brane.bqn k=1 d=3      # a single line              (92.3% hidden)
 ```
 
-Rules use Bays survive/birth notation with ranges: `S4/B4`, `S3-6/B3`,
-`S5-8/B9-10`.
+Full knobs: `k d n rule seed steps px wc wh out`. Rules use Bays survive/birth
+notation with ranges: `S4/B4`, `S3-6/B3`, `S5-8/B9-10`. The invisible fraction
+prints on every run.
 
-## Design decisions
+## How it works
 
-- **Rule.** Conway's B3/S23 dies instantly in 4D (80 neighbours, not 8). `make
-  search` scores random interval rules on one seed for survival, low density,
-  and churn, and writes a leaderboard to [`rules.md`](rules.md). The flagship is
-  **`S4/B4`**: it holds a steady ~8% brane density with heavy turnover, so the
-  cube stays translucent and never strobes (the `B3` family flickers with a
-  period-2 parity beat).
-- **Seeding.** The seed is a slab of noise offset into the hidden `w` layers, not
-  centred on the visible slice. Activity drifts *into* the `w=0` brane from
-  off-slice, which is what makes births look uncaused. Tunable via `wc`/`wh`.
-- **Render.** Full BQN, fixed isometric view, no camera. Each live voxel is
-  splatted as a hexagon back-to-front (painter's algorithm, done as a vectorised
-  z-buffer). Hue is the voxel's **dominant neighbour axis** — the axis whose two
-  ±1 hyperplanes hold the most live neighbours, computed in full 4D so a magenta
-  voxel is literally one driven from off-slice. Depth modulates brightness (near
-  bright, far dim) so 3D still reads, and an always-drawn bounding-box wireframe
-  gives the eye a stage. BQN emits PPM frames; `ffmpeg` assembles the loop. No
-  orbit on purpose — being able to rotate the volume would let you account for
-  every birth, which fights the whole point.
+A neighbour count is the grid summed over every shift. In an array language that
+is the same code at any rank, which is the only reason writing this in n
+dimensions was not miserable. The sum is separable — a 3-wide sum along each axis,
+composed over all axes — so 4D costs ~12 shift-adds instead of the 81 you'd get
+from building every shifted copy.
+
+```bqn
+Box  ← {d←=𝕩 ⋄ F←{𝕤⋄a←𝕨⋄g←𝕩⋄v←1⌾(a⊸⊑)(d⥊0)⋄(v⌽g)+g+(-v)⌽g} ⋄ 𝕩 F´ ↕d}
+Neigh ← {(Box 𝕩)-𝕩}
+Life ← {s‿b←𝕨 ⋄ n←Neigh 𝕩 ⋄ (n∊b)∨𝕩∧n∊s}   # 𝕨 = ⟨survive, birth⟩
+```
+
+Boundaries wrap on every axis, hidden ones included. Dimension is read off the
+grid's rank, so `d` is a parameter, never a rewrite.
+
+## Design notes
+
+- **Default rule `S4/B4`.** From the search: it holds a steady ~8% density with
+  high turnover, so the cube stays see-through and doesn't strobe. The `B3` family
+  works too but flickers with a period-2 parity beat.
+- **Seeding.** The default drops noise into the hidden layers rather than the
+  visible slice, so the cube is fed from off-screen. `wc`/`wh` move the band.
+- **Fixed view, no orbit.** Partly less work, partly because a locked camera is
+  what makes the off-screen churn read as strange rather than "oh, it's round the
+  back."
 
 ## Layout
 
 | file | role |
 |---|---|
 | `life.bqn`   | dimension-agnostic engine (`Box`, `Neigh`, `Life`, `Run`, `Trajectory`, `AxisDom`) |
-| `seed.bqn`   | 4D initial conditions (`Noise`, hidden-layer `Slab`) |
+| `seed.bqn`   | initial conditions (`Noise`, hidden-layer `Slab`) |
 | `search.bqn` | rule search → `rules.md` |
 | `render.bqn` | k-D brane → RGB raster (line / grid / iso cube / small multiples) |
 | `ppm.bqn`    | PPM (P6) writer |
-| `brane.bqn`  | main: evolve, slice `w=0`, render frames |
+| `brane.bqn`  | main: evolve, slice, render |
 | `test/`      | Conway correctness gate |
-| `plan.md` · `SPEC.md` | the plan and the original brief |
+| `plan.md` · `SPEC.md` | how it got built, and the original brief |
 
 ## References
 
-- Carter Bays — higher-dimensional Life rules and their survive/birth notation.
-- [`dlozeve/bqn-graphics`](https://github.com/dlozeve/bqn-graphics) — the render
-  reference (BQN array → PNM, colormaps). This repo emits PPM directly instead.
-- [BQN](https://mlochbaum.github.io/BQN/) · CBQN. Media-pipeline idioms follow my
-  own [BQNoise](https://github.com/4esv/BQNoise).
+- Carter Bays — higher-dimensional Life rules and the survive/birth notation.
+- [`dlozeve/bqn-graphics`](https://github.com/dlozeve/bqn-graphics) — render
+  reference (BQN array → PNM). This repo emits PPM directly instead.
+- [BQN](https://mlochbaum.github.io/BQN/) · CBQN. Media-pipeline habits come from
+  my own [BQNoise](https://github.com/4esv/BQNoise).
