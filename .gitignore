@@ -1,0 +1,23 @@
+# build artifacts from CBQN + C-lib bindings (cf. BQNoise)
+*.o
+*.so
+*.dylib
+
+# rendered frames / exports / captures
+/frames/
+/render/
+/out/
+*.wav
+*.mp4
+*.gif
+*.png
+
+# scratch
+/scratch/
+.DS_Store
+
+# …but the curated hero assets ARE committed (they're the piece's shopfront)
+!/assets/
+!/assets/hero.gif
+!/assets/hero.png
+!/assets/dimensions.png
