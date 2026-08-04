@@ -29,8 +29,7 @@ invisible = (3^d − 3^k) / (3^d − 1)
 ```
 
 For the default 3D view of a 4D grid that is `(81 − 27) / (81 − 1)`, or 67.5%.
-Cells then appear and disappear with no visible cause, which is what makes the
-higher-dimensional slices interesting to watch.
+Cells then appear and disappear with no visible cause.
 
 | d | Moore neighbours | invisible for a 3D slice |
 |---|---|---|
