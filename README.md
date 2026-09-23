@@ -15,8 +15,8 @@ each cell's dominant neighbour axis.*
 ## Overview
 
 Ordinary Game of Life is two-dimensional: a cell lives or dies according to its 8
-neighbours. This generalises to any dimension `d`, where a cell has `3^d − 1`
-neighbours and a rule is a set of neighbour counts for survival and for birth.
+neighbours. This generalises to any dimension `d`. A cell has `3^d − 1` neighbours, and a
+rule is a set of neighbour counts for survival and for birth.
 The engine runs that in arbitrary `d`, then renders a `k`-dimensional slice
 (`k ≤ d`) so the result can be displayed.
 
@@ -29,7 +29,7 @@ invisible = (3^d − 3^k) / (3^d − 1)
 ```
 
 For the default 3D view of a 4D grid that is `(81 − 27) / (81 − 1)`, or 67.5%.
-Cells then appear and disappear with no visible cause, which is what makes the
+Cells appear and disappear with no visible cause. That is what makes the
 higher-dimensional slices interesting to watch.
 
 | d | Moore neighbours | invisible for a 3D slice |
@@ -83,8 +83,8 @@ The renderer chooses a mode from `k`, the visible dimension (`1 ≤ k ≤ 4`):
 | 4 | a grid of cubes, one per position along the 4th visible axis |
 
 Each cell is coloured by the axis most of its neighbours lie on. In a 4D run the
-hidden axis is drawn in magenta, so cells being driven from off-screen are
-visible as such.
+hidden axis is drawn in magenta, so you can see which cells are driven from
+off-screen.
 
 ![The four render modes at different (k, d), each labelled with its invisible fraction](assets/dimensions.png)
 
@@ -114,18 +114,18 @@ Rules use Carter Bays' survive/birth notation, with ranges allowed: `S4/B4`,
 survives, `B` the counts at which a dead cell is born.
 
 Conway's `S2-3/B3` does not survive in 4D. With 80 neighbours instead of 8, a
-random field overcrowds and dies within a few generations. `search.bqn` addresses
-this by scoring random interval rules on a shared seed for survival, low density,
-and sustained change, then writing a ranked table to [`rules.md`](rules.md). The
-default `S4/B4` comes from that search: it holds a steady density near 8% with
-high turnover, so the volume stays translucent and does not strobe.
+random field overcrowds and dies within a few generations. `search.bqn` scores
+random interval rules on a shared seed for survival, low density, and sustained
+change. It writes a ranked table to [`rules.md`](rules.md). The default `S4/B4`
+comes from that search. It holds a steady density near 8% with high turnover, so
+the volume stays translucent and does not strobe.
 
 ## How it works
 
-A neighbour count is the grid summed over every shift, which in an array language
-is the same code at any rank. The sum is separable, one 3-wide sum along each axis
-composed over all axes, so 4D costs about 12 shift-and-add passes rather than the
-81 needed to build every shifted copy.
+A neighbour count is the grid summed over every shift. In an array language that
+is the same code at any rank. The sum is separable: one 3-wide sum along each
+axis, composed over all axes. So 4D costs about 12 shift-and-add passes rather
+than the 81 needed to build every shifted copy.
 
 ```bqn
 Face ← {v←𝕨=↕=𝕩 ⋄ (v⌽𝕩)+(-v)⌽𝕩}   # the ±1 toroidal shifts along axis 𝕨, summed
